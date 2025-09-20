@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Guess the Nick - Followers</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="startScreen">
+      <h2>Guess the Nick - Twitch Followers</h2>
+      <input type="text" id="canalInput" placeholder="Nome do canal">
+      <button onclick="startGame()">Começar</button>
+    </div>
+    <div id="gameScreen" style="display:none; flex-direction:column; height:100%;">
+      <div id="topBar">
+        <div id="level">Level 1</div>
+        <div id="lives">❤❤❤</div>
+      </div>
+      <div id="nickDisplay">Nick</div>
+      <input type="text" id="guessInput" placeholder="Digite o nick" onkeydown="checkGuess(event)">
+    </div>
+  </div>
+
+  <script>
+    let nicks=[], currentNick="", level=1, lives=3;
+
+    async function startGame() {
+      const canal = document.getElementById("canalInput").value.trim().toLowerCase();
+      if (!canal) { alert("Digite o nome do canal!"); return; }
+
+      try {
+        const res = await fetch(`/api/followers?channel=${canal}`);
+        const data = await res.json();
+        if (!data || data.error) { alert(data.error || "Erro ao buscar seguidores."); return; }
+        nicks = data;
+        document.getElementById("startScreen").style.display="none";
+        document.getElementById("gameScreen").style.display="flex";
+        nextRound();
+      } catch(err) {
+        alert("Erro ao buscar seguidores.");
+        console.error(err);
+      }
+    }
+
+    function nextRound() {
+      currentNick = nicks[Math.floor(Math.random() * nicks.length)];
+      document.getElementById("nickDisplay").textContent = currentNick;
+      document.getElementById("guessInput").value = "";
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById("level").textContent = "Level " + level;
+      document.getElementById("lives").textContent = "❤".repeat(lives);
+    }
+
+    function checkGuess(e) {
+      if (e.key === "Enter") {
+        const guess = document.getElementById("guessInput").value.trim().toLowerCase();
+        if (guess === currentNick.toLowerCase()) {
+          level++;
+          nextRound();
+        } else {
+          lives--;
+          if (lives <= 0) {
+            alert("Game Over! Você chegou até o level " + level);
+            location.reload();
+          } else {
+            updateUI();
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
